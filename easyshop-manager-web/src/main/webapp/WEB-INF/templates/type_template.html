@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>类型模板管理</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <link rel="stylesheet" href="../plugins/bootstrap/css/bootstrap.min.css" th:href="@{/plugins/bootstrap/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" href="../plugins/adminLTE/css/AdminLTE.css" th:href="@{/plugins/adminLTE/css/AdminLTE.css}"/>
+    <link rel="stylesheet" href="../plugins/adminLTE/css/skins/_all-skins.min.css" th:href="@{/plugins/adminLTE/css/skins/_all-skins.min.css}"/>
+    <link rel="stylesheet" href="../css/style.css" th:href="@{/css/style.css}"/>
+	<script src="../plugins/jQuery/jquery-2.2.3.min.js" th:src="@{/plugins/jQuery/jquery-2.2.3.min.js}"></script>
+    <script src="../plugins/bootstrap/js/bootstrap.min.js" th:src="@{/plugins/bootstrap/js/bootstrap.min.js}"></script>
+	<script src="media/layui/layui.js" th:src="@{/media/layui/layui.js}"></script>
+  
+	<script type="text/javascript">
+	//跳转页码
+    function goPage(pageIndex){   	
+    	$("#typeTemplateForm").attr("action","/typeTemplate/list/"+pageIndex);
+		$("#typeTemplateForm").submit();
+    };
+  //全选
+	function ckAll(){
+		$("[name='children']").prop("checked",$("#selall").prop("checked"));
+	};
+	function ckChildren(){
+		var count=$("[name='children']").length;
+		var count1=$("[name='children']:checked").length;
+		if(count1==count){
+			$("#selall").prop("checked",true);
+		}else{
+			$("#selall").prop("checked",false);
+		}
+	};
+    //新增获得数据关联品牌及关联规格信息
+    function getBrandsAndSpec(){
+    	$.get("/typeTemplate/getBrandsAndSpec",null,function(obj){
+    		
+    		var brands = obj.brands;
+    		var specifications = obj.specifications;
+    		//填充关联品牌复选框
+    		$("#add_brands").html("");
+    		for(var i=0;i<brands.length;i++){
+    			
+    			if((i+1)%5==0){
+    				var brand = "<input type='checkbox' name='brands' value='"+brands[i].ckBox+"' />"+brands[i].name+"<br/>";
+        			$("#add_brands").append(brand);
+    			}else{
+    				var brand = "<input type='checkbox' name='brands' value='"+brands[i].ckBox+"' />"+brands[i].name+"&nbsp;&nbsp;&nbsp;&nbsp";
+        			$("#add_brands").append(brand);
+    			}
+    		} ;
+    		//填充关联规格复选框
+    		$("#add_speci").html("");
+    		for(var i=0;i<specifications.length;i++){
+    			
+    			if((i+1)%5==0){
+    				var specification = "<input type='checkbox' name='specifications' value='"+specifications[i].ckBox+"' />"+specifications[i].specName+"<br/>";
+        			$("#add_speci").append(specification);
+    			}else{
+    				var specification = "<input type='checkbox' name='specifications' value='"+specifications[i].ckBox+"' />"+specifications[i].specName+"&nbsp;&nbsp;&nbsp;&nbsp";
+        			$("#add_speci").append(specification);
+    			}
+    		} ;
+    	});
+    };
+  /*   //新增扩展属性选项
+    function addOption(){
+    	var option="<tr>"+									
+    		"<td><input class='form-control' placeholder='属性名称' name='customAttributeItems'></td>"+
+    		"<td><button type='button' class='btn btn-default' title='删除' onclick='deleteOption(this)'><i class='fa fa-trash-o'></i> 删除</button></td>"+
+    		"</tr>";
+    	$("#tbody_add").append(option);
+    }; */
+    //新增扩展属性选项
+    function addOption(id){
+    	var option="<tr>"+									
+    		"<td><input class='form-control' placeholder='属性名称' name='customAttributeItems'></td>"+
+    		"<td><button type='button' class='btn btn-default' title='删除' onclick='deleteOption(this)'><i class='fa fa-trash-o'></i> 删除</button></td>"+
+    		"</tr>";
+    	$(id).append(option);
+    };
+    //删除扩展属性选项
+    function deleteOption(btn){
+    	$(btn).parent().parent().remove();
+    };
+    //商品类型模板新建
+    function addTemplate(){
+    	$.ajax({
+			url:"/typeTemplate/add",
+			type:"post",				
+			data:$("#addForm").serialize(),
+			success:function(result){					
+				layui.use('table', function() {
+					if(result.flag==true){
+						layer.msg("新增成功", {icon : 6},function(){
+							var pageIndex=[[${pageResult.totalPage}]];//新增成功以后去到尾页
+							goPage(pageIndex);
+							//window.location.reload();刷新页面
+						});
+					}else{							
+						layer.msg("新增失败", {icon : 5},function(){
+							window.location.reload();//刷新页面
+						});
+					}
+				}); 
+			}
+		});
+    	
+    };
+    //修改获取数据回显信息
+    function getTypeTemplateId(id){
+    	$.get("/typeTemplate/getTypeTemplateId/"+id,null,function(obj){
+    		$("#typeid").val(obj.template.id);
+    		$("#name").val(obj.template.name);
+    		   		
+    		//填充关联品牌复选框
+    		var brands=obj.brands;
+    		$("#edit_brands").html("");
+    		for(var i=0;i<brands.length;i++){
+    			
+    			if((i+1)%5==0){
+    				if(brands[i].flag==true){
+    					var brand = "<input type='checkbox' name='brands' value='"+brands[i].ckBox+"' checked />"+brands[i].name+"<br/>";
+    				}else{
+    					var brand = "<input type='checkbox' name='brands' value='"+brands[i].ckBox+"'  />"+brands[i].name+"<br/>";
+    				}
+    				
+        			$("#edit_brands").append(brand);
+    			}else{
+    				if(brands[i].flag==true){
+    					var brand = "<input type='checkbox' name='brands' value='"+brands[i].ckBox+"' checked />"+brands[i].name+"&nbsp;&nbsp;&nbsp;&nbsp";
+    				}else{
+    					var brand = "<input type='checkbox' name='brands' value='"+brands[i].ckBox+"' />"+brands[i].name+"&nbsp;&nbsp;&nbsp;&nbsp";
+    				}   				
+        			$("#edit_brands").append(brand);
+    			}
+    		} ;
+    		
+    		//回显关联规格
+    		$("#edit_speci").html("");
+    		var specifications=obj.specifications;
+    		for(var i=0;i<specifications.length;i++){
+    		
+    			if((i+1)%5==0){
+    				if(specifications[i].flag==true){
+    					var specification = "<input type='checkbox' name='specifications' value='"+specifications[i].ckBox+"' checked />"+specifications[i].specName+"<br/>";
+    				}else{
+    					var specification = "<input type='checkbox' name='specifications' value='"+specifications[i].ckBox+"'  />"+specifications[i].specName+"<br/>";
+    				}
+    				
+        			$("#edit_speci").append(specification);
+    			}else{
+    				if(specifications[i].flag==true){
+    					var specification = "<input type='checkbox' name='specifications' value='"+specifications[i].ckBox+"' checked />"+specifications[i].specName+"&nbsp;&nbsp;&nbsp;&nbsp";
+    				}else{
+    					var specification = "<input type='checkbox' name='specifications' value='"+specifications[i].ckBox+"' />"+specifications[i].specName+"&nbsp;&nbsp;&nbsp;&nbsp";
+    				}   				
+        			$("#edit_speci").append(specification);
+    			}
+    		}
+    		
+    		//填充扩展属性
+    		$("#tbody_edit").html("");
+    		var customAttributeItems= obj.customAttributeItems;
+    		for(var i=0;i<customAttributeItems.length;i++){
+    			var option="<tr>"+									
+        		"<td><input class='form-control' placeholder='属性名称' name='customAttributeItems' value="+customAttributeItems[i].text+"></td>"+
+        		"<td><button type='button' class='btn btn-default' title='删除' onclick='deleteOption(this)'><i class='fa fa-trash-o'></i> 删除</button></td>"+
+        		"</tr>";
+        		$("#tbody_edit").append(option);
+    		}
+    		
+    	});
+    };
+    //更新保存
+    function editTemplate(){
+    	$.ajax({
+			url:"/typeTemplate/update",
+			type:"post",				
+			data:$("#editForm").serialize(),
+			success:function(result){					
+				layui.use('table', function() {
+					if(result.flag==true){
+						layer.msg("新增成功", {icon : 6},function(){							
+							window.location.reload();//刷新页面
+						});
+					}else{							
+						layer.msg("新增失败", {icon : 5},function(){
+							window.location.reload();//刷新页面
+						});
+					}
+				}); 
+			}
+		});
+    };
+    //根据id删除
+    function deletetypeTemplate(id){
+    	/* $.post("/typeTemplate/deletetypeTemplate",{"id":id},
+			function(obj){
+    		
+    	}); */
+    	//异步删除
+    	layui.use('table', function() {
+		   layer.confirm('是否确认删除改品牌?',function(index) {
+			   $.ajax({
+					url:"/typeTemplate/deletetypeTemplate",
+					type:"post",
+					data:{"id":id},
+					dataType:"json",
+					success:function(result){
+						layui.use('table', function() {
+							if(result.flag==true){
+								layer.msg("删除成功", {icon : 6},function(){
+									window.location.reload();//刷新页面
+								});
+							}else{
+								layer.msg("删除失败", {icon : 5},function(){
+									window.location.reload();//刷新页面
+								});
+							}
+						});
+					}
+				});
+		   });
+		});
+    };
+ // 批量删除
+    function deleteSome(){
+    	var count=$("[name='children']:checked").length;
+    	if(count>0){
+    		//异步删除
+	    	layui.use('table', function() {
+			   layer.confirm('是否确认删除选中的品牌?',function(index) {
+				  
+				 //获取一共选中的ID
+		    		var ids=new Array(); //数组
+		    		var cks=$("[name='children']:checked");
+		    		for(var i=0;i<cks.length;i++){
+		    			var id=cks[i].value;
+		    			ids.push(id);
+		    		}
+		    		//发送异步
+		    		$.ajax({
+						url:"/typeTemplate/deleteSome",
+						type:"post",
+						dataType:"json",
+						data:"ids="+ids, //把数组发送过去
+						success:function(result){
+							layui.use('table', function() {
+								if(result.flag==true){
+									layer.msg("删除成功", {icon : 6},function(){
+										window.location.reload();//刷新页面
+									});
+								}else{
+									layer.msg("删除失败", {icon : 5},function(){
+										window.location.reload();//刷新页面
+									});
+								}
+							});
+						}
+					});
+				   
+			   });
+			});	    			    		
+    	}else{
+    		layui.use('table', function() {
+				layer.msg("请选中要删除的品牌!", {icon : 6});
+			});
+    	}
+    }
+	</script>
+</head>
+
+<body class="hold-transition skin-red sidebar-mini" >
+  <!-- .box-body -->
+                
+                    <div class="box-header with-border">
+                        <h3 class="box-title">商品类型模板管理</h3>
+                    </div>
+
+                    <div class="box-body">
+
+                        <!-- 数据表格 -->
+                        <div class="table-box">
+
+                            <!--工具栏-->
+                            <div class="pull-left">
+                                <div class="form-group form-inline">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-default" title="新建" data-toggle="modal" data-target="#addModal" onclick="getBrandsAndSpec()"><i class="fa fa-file-o"></i> 新建</button>
+                                        <button type="button" class="btn btn-default" title="批量删除" onclick="deleteSome()"><i class="fa fa-trash-o"></i> 批量删除</button>
+                                       
+                                        <button type="button" class="btn btn-default" title="刷新" onclick="window.location.reload();"><i class="fa fa-refresh"></i> 刷新</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 搜索框 -->
+                               <form action="#" th:action="@{/typeTemplate/list/1}" method="post" id="typeTemplateForm">
+                                <div class="box-tools pull-right">
+	                                <div class="has-feedback">
+								          品牌名称：<input type="text" name="name" th:value="${pageResult.bean.name}"> 
+								          <button  class="btn btn-default" type="submit">查询</button>                               
+	                                </div>
+                                 </div>
+                                </form>
+                              <!-- 搜索框 -->
+                            <!--工具栏/-->
+								
+							 
+							
+								
+			                  <!--数据列表-->
+			                  <table id="dataList" class="table table-bordered table-striped table-hover dataTable">
+			                      <thead>
+			                          <tr>
+			                              <th class="" style="padding-right:0px">
+			                                  <input id="selall" type="checkbox" class="icheckbox_square-blue" onclick="ckAll()">
+			                              </th> 
+										  <th class="sorting_asc">模板ID</th>
+									      <th class="sorting">分类模板名称</th>
+									      <th class="sorting">关联品牌</th>
+									      <th class="sorting">关联规格</th>									     
+									      <th class="sorting">扩展属性</th>													     						
+					                      <th class="text-center">操作</th>
+			                          </tr>
+			                      </thead>
+			                      <tbody>
+			                          <tr th:each="typeTemplate:${pageResult.list}">
+			                              <td><input  type="checkbox" name="children" onclick="ckChildren()" th:value="${typeTemplate.id}"></td>			                              
+				                          <td th:text="${typeTemplate.id}">1</td>
+									      <td th:text="${typeTemplate.name}">手机</td>
+									       <td th:text="${typeTemplate.brandIds}">联想,华为,中兴</td>
+									      <td th:text="${typeTemplate.specIds}">联想,华为,中兴</td>
+									      <td th:text="${typeTemplate.customAttributeItems}">网络制式</td>									 	                                                                  
+		                                  <td class="text-center">                                           
+		                                 	  <button type="button" class="btn bg-olive btn-xs" data-toggle="modal" data-target="#editModal" th:onclick="|getTypeTemplateId(${typeTemplate.id})|" >修改</button>  
+		                                 	  <button type="button" class="btn bg-red btn-xs" data-toggle="modal"  th:onclick="|deletetypeTemplate(${typeTemplate.id})|">删除</button>                                                       
+		                                  </td>
+			                          </tr>
+									 
+			                      </tbody>
+			                  </table>
+			                  <!--数据列表/-->                        
+							  
+							    <!-- 添加分页的页码 -->
+			                  <!-- 分页组件 -->
+			                  <div class="row">
+			                	<div class="col-sm-6"><div class="dataTables_paginate paging_bootstrap" id="sample-table_paginate">
+			                	    <ul class="pagination">
+			                	      <li class="prev"><a href="#" onclick="goPage(1)">首页</a></li>
+			                	      <li class="prev" th:if="${hasPrevious}"><a href="#" th:onclick="|goPage(${pageResult.pageIndex-1})|">上一页</a></li>
+			                	      
+			                	      <li th:each="num:${pageResult.numbers}" th:class="${pageResult.pageIndex==num}? active"><a href="#" th:onclick="'goPage('+${num}+')'" th:text="${num}">1</a></li>
+			                	      <li class="next" th:if="${hasNext}"><a href="#" th:onclick="|goPage(${pageResult.pageIndex+1})|">下一页</a></li>
+			                	      <li class="next"><a href="#" th:onclick="|goPage(${pageResult.totalPage})|">尾页</a></li>
+			                	       <li class="next"><a href="#" >共<span th:text="${pageResult.totalCount}">XXXXX</span>条</a></li>
+			                	    </ul>
+			                	 </div>
+			                	</div>
+			                   </div>
+			                 <!-- 分页组件 -->
+			                 <!-- 添加分页的页码 -->
+							  
+							 
+                        </div>
+                        <!-- 数据表格 /-->
+                        
+                        
+                        
+                        
+                     </div>
+                    <!-- /.box-body -->
+                    
+<!-- 新建窗口 -->
+<form method="post" id="addForm">
+<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog" >
+	<div class="modal-content">
+		<div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+			<h3 id="myModalLabel">商品类型模板新建</h3>
+		</div>
+		<div class="modal-body">							
+			
+			<table class="table table-bordered table-striped"  width="800px">
+		      	<tr>
+		      		<td>商品类型</td>
+		      		<td><input  class="form-control" placeholder="商品类型" name="name">  </td>
+		      	</tr>			   
+		      	<tr>
+		      		<td>关联品牌</td>
+		      		<td id="add_brands">
+		      			
+		      		</td>
+		      	</tr>
+		      	<tr>
+		      		<td>关联规格</td>
+		      		<td id="add_speci">
+	
+		      		</td>
+		      	</tr>	
+		      	
+		      	<tr>
+		      		<td>扩展属性</td>
+		      		<td>
+		      			<div class="btn-group">
+                             <button type="button" class="btn btn-default" title="新增扩展属性" onclick="addOption('#tbody_add')"><i class="fa fa-file-o"></i> 新增扩展属性</button>
+                                                                    
+                        </div>
+						<table class="table table-bordered table-striped"  width="800px">
+							<thead>
+								<tr>
+								    
+									<td>属性名称</td>									
+									<td>操作</td>
+								</tr>
+							</thead>
+							<tbody id="tbody_add">
+								<tr>
+									
+									<td><input class="form-control" placeholder="属性名称" name="customAttributeItems"></td>
+									<td><button type="button" class="btn btn-default" title="删除"  onclick="deleteOption(this)"><i class="fa fa-trash-o"></i> 删除</button></td>
+								</tr>
+								<tr>
+									
+									<td><input class="form-control" placeholder="属性名称" name="customAttributeItems"></td>
+									<td><button type="button" class="btn btn-default" title="删除" onclick="deleteOption(this)"><i class="fa fa-trash-o"></i> 删除</button></td>
+								</tr>
+							</tbody>
+						</table>	
+           
+		      		</td>
+		      	</tr>	
+		      	      
+			 </table>				
+			
+		</div>
+		<div class="modal-footer">						
+			<button class="btn btn-success" data-dismiss="modal" aria-hidden="true" onclick="addTemplate();">新增</button>
+			<button class="btn btn-default" data-dismiss="modal" aria-hidden="true">关闭</button>
+		</div>
+	  </div>
+	</div>
+</div>	           
+</form>					    
+                                
+<!-- 编辑窗口 -->
+<form method="post" id="editForm">
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog" >
+	<div class="modal-content">
+		<div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+			<h3 id="myModalLabel">商品类型模板编辑</h3>
+		</div>
+		<div class="modal-body">							
+			
+			<table class="table table-bordered table-striped"  width="800px">
+		      	<tr>
+		      		<td>商品类型</td>
+		      		<td><input  class="form-control" placeholder="商品类型" name="name" id="name"> 
+		      			<input type="hidden"  name="id" id="typeid"/>
+		      		 </td>
+		      	</tr>			   
+		      	<tr>
+		      		<td>关联品牌</td>
+		      		<td id="edit_brands">
+		      			
+		      		</td>
+		      	</tr>
+		      	<tr>
+		      		<td>关联规格</td>
+		      		<td id="edit_speci">
+	
+		      		</td>
+		      	</tr>	
+		      	
+		      	<tr>
+		      		<td>扩展属性</td>
+		      		<td>
+		      			<div class="btn-group">
+                             <button type="button" class="btn btn-default" title="新增扩展属性" onclick="addOption('#tbody_edit')"><i class="fa fa-file-o"></i> 新增扩展属性</button>
+                                                                    
+                        </div>
+						<table class="table table-bordered table-striped"  width="800px">
+							<thead>
+								<tr>
+								   
+									<td>属性名称</td>									
+									<td>操作</td>
+								</tr>
+							</thead>
+							<tbody id="tbody_edit">
+														
+							</tbody>
+						</table>	
+           
+		      		</td>
+		      	</tr>	
+		      	      
+			 </table>				
+			
+		</div>
+		<div class="modal-footer">						
+			<button class="btn btn-success" data-dismiss="modal" aria-hidden="true" onclick="editTemplate();">修改</button>
+			<button class="btn btn-default" data-dismiss="modal" aria-hidden="true">关闭</button>
+		</div>
+	  </div>
+	</div>
+</div>
+</form>    
+</body>
+
+</html>
